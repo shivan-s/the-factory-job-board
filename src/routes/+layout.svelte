@@ -1,21 +1,34 @@
 <script>
-	import '../theme.postcss';
-	import '../app.postcss';
-	import { AppShell, AppBar } from '@skeletonlabs/skeleton';
+	import '@picocss/pico';
+	import { signIn, signOut } from '@auth/sveltekit/client';
+	import { page } from '$app/stores';
 </script>
 
-<AppShell>
-	<svelte:fragment slot="header">
-		<AppBar class="bg-stone-900">
-			<svelte:fragment slot="lead">The Factory Job Board</svelte:fragment>
-			<img
-				src="http://images.squarespace-cdn.com/content/v1/5f87a041e7f9db54f33aecfd/1602724221600-HP6S9OXEQJN48X0XX3GP/Factory+logo+black.png?format=1500w"
-				alt="The Factory logo"
-			/>
-			(center)
-			<svelte:fragment slot="trail">(trail)</svelte:fragment>
-		</AppBar>
-	</svelte:fragment>
-	<slot />
-	<svelte:fragment slot="footer">The Factory Job Board</svelte:fragment>
-</AppShell>
+<body>
+	<nav>
+		<ul />
+		<ul>
+			<li><strong>The Factory Job Board</strong></li>
+		</ul>
+		<ul>
+			{#if $page.data.session}
+				<li>
+					<button class="primary" on:click={() => signOut()}>Sign Out</button>
+				</li>
+				<li>
+					{$page.data.session.user?.name}
+				</li>
+			{:else}
+				<li>
+					<button class="primary" on:click={() => signIn()}>Sign In</button>
+				</li>
+			{/if}
+		</ul>
+	</nav>
+	<section>
+		<main class="container">
+			<slot />
+		</main>
+	</section>
+	<footer />
+</body>
