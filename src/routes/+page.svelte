@@ -1,13 +1,30 @@
 <script lang="ts">
 	import { formatDistanceToNow } from 'date-fns';
-
+	import { createEventDispatcher } from 'svelte';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
 
 	let search = '';
-
 	let modal = false;
+
+	type T = $$Generic;
+	const dispatch = createEventDispatcher<{ cancel: never; save: T }>();
+
+	const handleCancel = () => {
+		dispatch('cancel');
+	};
+
+	const handleSave = (e: { currentTarget: HTMLFormElement }) => {
+		const formData = new FormData(e.currentTarget);
+		const _data: Record<string, unknown> = {};
+
+		for (let field of formData) {
+			const [key, value] = field;
+			_data[key] = value;
+		}
+		dispatch('save', _data as T);
+	};
 </script>
 
 <h2>Jobs</h2>
@@ -29,18 +46,29 @@
 	<section />
 {/each}
 
-<dialog open={modal}>
-	<article>
-		<header>
-			<a on:click={() => (modal = false)} href="#close" aria-label="Close" class="close" />
-			<!-- <button on:click={() => (modal = false)} class="close" /> -->
-			<h3>Create Job</h3>
-		</header>
-		<form>
-			<input type="text" />
-			<input type="text" />
-			<input type="text" />
-			<button class="Primary">Save</button>
-		</form>
-	</article>
-</dialog>
+<form on:submit|preventDefault={handleSave}>
+	<dialog open={modal}>
+		<article>
+			<header>
+				<a on:click={() => (modal = false)} href="#close" aria-label="Close" class="close" />
+				<!-- <button on:click={() => (modal = false)} class="close" /> -->
+				<div class="headings">
+					<h3>Create Job</h3>
+					<p>Create a new job</p>
+				</div>
+			</header>
+			<label>
+				<strong>Title</strong>
+				<input type="text" name="title" required />
+			</label>
+			<label>
+				<strong>Description</strong>
+				<textarea name="description" />
+			</label>
+			<footer>
+				<button class="Secondary" on:click|preventDefault={handleCancel}>Cancel</button>
+				<button class="Primary" type="submit">Save</button>
+			</footer>
+		</article>
+	</dialog>
+</form>
