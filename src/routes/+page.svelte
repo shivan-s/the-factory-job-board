@@ -1,43 +1,47 @@
 <script lang="ts">
+	import { trpc } from '$lib/trpc/client';
+	import type { Job } from '@prisma/client';
 	import { formatDistanceToNow } from 'date-fns';
-	import { createEventDispatcher } from 'svelte';
 	import type { PageData } from './$types';
-
-	export let data: PageData;
+	import AddJobForm from './AddJobForm.svelte';
 
 	let search = '';
-	let modal = false;
+	let loading = false;
 
-	type T = $$Generic;
-	const dispatch = createEventDispatcher<{ cancel: never; save: T }>();
+	export let data: PageData;
+	/* let jobs = data.jobs */
+	let jobs: Job[] = [];
 
-	const handleCancel = () => {
-		dispatch('cancel');
+	let showModal = false;
+	const toggleModal = () => {
+		showModal = !showModal;
 	};
 
-	const handleSave = (e: { currentTarget: HTMLFormElement }) => {
-		const formData = new FormData(e.currentTarget);
-		const _data: Record<string, unknown> = {};
-
-		for (let field of formData) {
-			const [key, value] = field;
-			_data[key] = value;
-		}
-		dispatch('save', _data as T);
+	const handleSave = async (e: CustomEvent) => {
+		loading = true;
+		const newJob = e.detail;
+		await trpc().jobs.createOrUpdateById.mutate(newJob);
+		loading = false;
 	};
 </script>
 
 <h2>Jobs</h2>
 <input bind:value={search} type="search" id="search" name="search" placeholder="Search jobs..." />
 
-<a href="#" on:click={() => (modal = true)} role="button">Add Job</a>
+<button on:click={toggleModal}>Add Job</button>
 
-{#each data.jobs as job}
+{#if loading}
+	<article aria-busy={loading} />
+{/if}
+{#each jobs as job}
 	<article>
 		<header>
 			<div class="headings">
 				<h3>{job.title}</h3>
-				<p>{formatDistanceToNow(new Date(job.date), { addSuffix: true })}</p>
+				<p>
+					Created {formatDistanceToNow(new Date(job.createdAt), { addSuffix: true })}
+					{#if job.createdAt !== job.updatedAt}{formatDistanceToNow(new Date(job.updatedAt))}{/if}
+				</p>
 			</div>
 		</header>
 		<p>{job.description}</p>
@@ -46,29 +50,4 @@
 	<section />
 {/each}
 
-<form on:submit|preventDefault={handleSave}>
-	<dialog open={modal}>
-		<article>
-			<header>
-				<a on:click={() => (modal = false)} href="#close" aria-label="Close" class="close" />
-				<!-- <button on:click={() => (modal = false)} class="close" /> -->
-				<div class="headings">
-					<h3>Create Job</h3>
-					<p>Create a new job</p>
-				</div>
-			</header>
-			<label>
-				<strong>Title</strong>
-				<input type="text" name="title" required />
-			</label>
-			<label>
-				<strong>Description</strong>
-				<textarea name="description" />
-			</label>
-			<footer>
-				<button class="Secondary" on:click|preventDefault={handleCancel}>Cancel</button>
-				<button class="Primary" type="submit">Save</button>
-			</footer>
-		</article>
-	</dialog>
-</form>
+<AddJobForm {showModal} on:click={toggleModal} on:save={handleSave} />

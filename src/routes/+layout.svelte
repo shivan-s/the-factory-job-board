@@ -32,3 +32,9 @@
 	</section>
 	<footer />
 </body>
+
+<style>
+	:global(button) {
+		width: fit-content;
+	}
+</style>
