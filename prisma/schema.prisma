@@ -67,6 +67,9 @@ model Organisation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  name        String
+  description String?
+
   authors   User[]   @relation(fields: [authorIds], references: [id])
   authorIds String[] @db.ObjectId
   jobs      Job[]

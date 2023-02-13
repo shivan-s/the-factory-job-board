@@ -1,0 +1,43 @@
+---
+version: '3.8'
+name: the-factory-job-board
+networks:
+  internal_network:
+    driver: bridge
+  external_network:
+services:
+  app:
+    container_name: the-factory-job-board_app
+    networks:
+      - internal_network
+      - external_network
+    build:
+      context: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - db
+    volumes:
+      - .:/code/
+    ports:
+      - '${APP_PORT:-5173}:5173'
+      - '${PRISMA_PORT:-5555}:5555'
+  db:
+    container_name: the-factory-job-board_db
+    networks:
+      - internal_network
+    restart: unless-stopped
+    image: mongo
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=user
+      - MONGO_INITDB_ROOT_PASSWORD=pass
+    env_file:
+      - .env
+    volumes:
+      - mongodb:/data/db
+      - mongodb_config:/data/configdb
+
+volumes:
+  mongodb:
+  mongodb_config:

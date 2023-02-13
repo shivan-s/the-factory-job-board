@@ -1,16 +1,25 @@
 <script lang="ts">
 	import { trpc } from '$lib/trpc/client';
-	import type { Job } from '@prisma/client';
+	import { page } from '$app/stores';
+	import type { RouterInputs } from '$lib/trpc/router';
+	import { TRPCClientError } from '@trpc/client';
 	import { formatDistanceToNow } from 'date-fns';
 	import type { PageData } from './$types';
 	import AddJobForm from './AddJobForm.svelte';
 
 	let search = '';
 	let loading = false;
+	let errors: { message: string; path: string[] }[] | null = null;
+	let job: RouterInputs['jobs']['createOrUpdateById'] | null = null;
+	const { mutate: createJob } = trpc($page).jobs.createOrUpdateById.useMutation({
+		onSuccess: () => {
+			job = null;
+			showModal = false;
+		}
+	});
 
 	export let data: PageData;
-	/* let jobs = data.jobs */
-	let jobs: Job[] = [];
+	const jobs = data.jobs;
 
 	let showModal = false;
 	const toggleModal = () => {
@@ -19,9 +28,17 @@
 
 	const handleSave = async (e: CustomEvent) => {
 		loading = true;
-		const newJob = e.detail;
-		await trpc().jobs.createOrUpdateById.mutate(newJob);
-		loading = false;
+		try {
+			await createJob(e.detail);
+		} catch (err) {
+			if (err instanceof TRPCClientError) {
+				errors = JSON.parse(err.message);
+			} else {
+				throw err;
+			}
+		} finally {
+			loading = false;
+		}
 	};
 </script>
 
@@ -50,4 +67,4 @@
 	<section />
 {/each}
 
-<AddJobForm {showModal} on:click={toggleModal} on:save={handleSave} />
+<AddJobForm {job} {errors} {showModal} on:click={toggleModal} on:save={handleSave} />
